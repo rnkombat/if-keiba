@@ -6,5 +6,6 @@ struct IfKeibaApp: App {
         WindowGroup {
             RootView()
         }
+        .modelContainer(for: [Profile.self, Race.self, Ticket.self])
     }
 }
