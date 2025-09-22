@@ -130,9 +130,9 @@ struct HomeView: View {
 
                             LineMark(
                                 x: .value("日付", point.date),
-                                y: .value("If", point.ifBalance)
+                                y: .value("Actual + If", point.ifBalance)
                             )
-                            .foregroundStyle(by: .value("系列", "If"))
+                            .foregroundStyle(by: .value("系列", "Actual + If"))
                             .interpolationMethod(.linear)
                         case .profit:
                             LineMark(
@@ -144,9 +144,9 @@ struct HomeView: View {
 
                             LineMark(
                                 x: .value("日付", point.date),
-                                y: .value("If", point.ifProfit)
+                                y: .value("Actual + If", point.ifProfit)
                             )
-                            .foregroundStyle(by: .value("系列", "If"))
+                            .foregroundStyle(by: .value("系列", "Actual + If"))
                             .interpolationMethod(.linear)
                         case .returnRate:
                             if let actualRate = point.actualReturnRate {
@@ -161,9 +161,9 @@ struct HomeView: View {
                             if let ifRate = point.ifReturnRate {
                                 LineMark(
                                     x: .value("日付", point.date),
-                                    y: .value("If", ifRate)
+                                    y: .value("Actual + If", ifRate)
                                 )
-                                .foregroundStyle(by: .value("系列", "If"))
+                                .foregroundStyle(by: .value("系列", "Actual + If"))
                                 .interpolationMethod(.linear)
                             }
                         }
@@ -188,7 +188,7 @@ struct HomeView: View {
 
                             PointMark(
                                 x: .value("日付", selectedEntry.date),
-                                y: .value("If", selectedEntry.ifBalance)
+                                y: .value("Actual + If", selectedEntry.ifBalance)
                             )
                             .foregroundStyle(Color.green)
                             .symbolSize(70)
@@ -202,7 +202,7 @@ struct HomeView: View {
 
                             PointMark(
                                 x: .value("日付", selectedEntry.date),
-                                y: .value("If", selectedEntry.ifProfit)
+                                y: .value("Actual + If", selectedEntry.ifProfit)
                             )
                             .foregroundStyle(Color.green)
                             .symbolSize(70)
@@ -219,7 +219,7 @@ struct HomeView: View {
                             if let ifRate = selectedEntry.ifReturnRate {
                                 PointMark(
                                     x: .value("日付", selectedEntry.date),
-                                    y: .value("If", ifRate)
+                                    y: .value("Actual + If", ifRate)
                                 )
                                 .foregroundStyle(Color.green)
                                 .symbolSize(70)
@@ -248,7 +248,7 @@ struct HomeView: View {
                 }
                 .chartForegroundStyleScale([
                     "Actual": Color.blue,
-                    "If": Color.green
+                    "Actual + If": Color.green
                 ])
                 .chartLegend(position: .bottom, alignment: .center)
                 .frame(height: 260)
@@ -290,13 +290,13 @@ struct HomeView: View {
             switch chartKind {
             case .balance:
                 seriesRow(label: "Actual", valueText: formattedCurrency(entry.actualBalance), color: .blue)
-                seriesRow(label: "If", valueText: formattedCurrency(entry.ifBalance), color: .green)
+                seriesRow(label: "Actual + If", valueText: formattedCurrency(entry.ifBalance), color: .green)
             case .profit:
                 seriesRow(label: "Actual", valueText: formattedCurrency(entry.actualProfit), color: .blue)
-                seriesRow(label: "If", valueText: formattedCurrency(entry.ifProfit), color: .green)
+                seriesRow(label: "Actual + If", valueText: formattedCurrency(entry.ifProfit), color: .green)
             case .returnRate:
                 seriesRow(label: "Actual", valueText: formattedPercent(entry.actualReturnRate), color: .blue)
-                seriesRow(label: "If", valueText: formattedPercent(entry.ifReturnRate), color: .green)
+                seriesRow(label: "Actual + If", valueText: formattedPercent(entry.ifReturnRate), color: .green)
             }
         }
         .padding(8)
@@ -351,7 +351,7 @@ private struct HomeSummaryCard: View {
                     .monospacedDigit()
             }
             HStack {
-                Text("If")
+                Text("Actual + If")
                 Spacer()
                 Text(summary.ifTotal.formatted(.currency(code: "JPY")))
                     .monospacedDigit()

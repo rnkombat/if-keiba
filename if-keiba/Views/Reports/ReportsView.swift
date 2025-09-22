@@ -95,14 +95,19 @@ private struct ReportsMonthlyRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(alignment: .top) {
                 Text(summary.month, format: monthFormatter)
                     .font(.headline)
                 Spacer()
-                Text(summary.difference.formatted(.currency(code: "JPY")))
-                    .font(.headline)
-                    .monospacedDigit()
-                    .foregroundStyle(summary.difference >= 0 ? Color.green : Color.red)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("ActualとActual + Ifの差分")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(summary.difference.formatted(.currency(code: "JPY")))
+                        .font(.headline)
+                        .monospacedDigit()
+                        .foregroundStyle(summary.difference >= 0 ? Color.green : Color.red)
+                }
             }
 
             valueRow(
