@@ -33,7 +33,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 日次の残高ポイント列（ダミー実装では空配列）。
-    func dailySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    public func dailySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         // TODO: 実際の残高計算を実装する。
         return []
     }
@@ -43,7 +43,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 月次の残高ポイント列（ダミー実装では空配列）。
-    func monthlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    public func monthlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         // TODO: 実際の残高計算を実装する。
         return []
     }
@@ -53,7 +53,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 年次の残高ポイント列（ダミー実装では空配列）。
-    func yearlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    public func yearlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         // TODO: 実際の残高計算を実装する。
         return []
     }
@@ -63,7 +63,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 最終的な残高サマリー（ダミー実装では初期値のみ）。
-    func summarize(races: [Race], profile: Profile) -> BalanceSummary {
+    public func summarize(races: [Race], profile: Profile) -> BalanceSummary {
         // TODO: 実際の残高計算を実装する。
         return BalanceSummary(finalActual: profile.initialBalance, finalIf: profile.initialBalance)
     }

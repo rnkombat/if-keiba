@@ -1,4 +1,3 @@
-// if-keiba/if-keiba/Models/Race.swift
 import Foundation
 import SwiftData
 
@@ -8,9 +7,7 @@ final class Race {
     var date: Date
     var name: String?
     var memo: String?
-    // 片側だけに付ける（ここに付ける想定）
-    @Relationship(deleteRule: .cascade, inverse: \Ticket.race)
-    var tickets: [Ticket] = []
+    @Relationship(deleteRule: .cascade, inverse: \Ticket.race) var tickets: [Ticket] = []
     var createdAt: Date
     var updatedAt: Date
 
