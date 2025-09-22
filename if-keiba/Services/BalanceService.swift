@@ -126,6 +126,7 @@ public final class BalanceService {
                 switch ticket.kind {
                 case 0: // Actual
                     change.actual += net
+                    change.ifScenario += net
                 case 1: // If
                     change.ifScenario += net
                 default:

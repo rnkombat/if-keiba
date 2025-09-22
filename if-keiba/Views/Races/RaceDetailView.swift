@@ -93,17 +93,26 @@ struct RaceDetailView: View {
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(tickets) { ticket in
-                    TicketRow(ticket: ticket)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            if kind == .actual {
-                                Button {
-                                    viewModel.presentIncreaseSheet(for: ticket)
-                                } label: {
-                                    Label("Ifへ複製", systemImage: "wand.and.stars")
-                                }
-                                .tint(.indigo)
-                            }
+                    TicketRow(ticket: ticket) { ticket in
+                        viewModel.presentTicketEditor(for: ticket)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button {
+                            viewModel.presentTicketEditor(for: ticket)
+                        } label: {
+                            Label("編集", systemImage: "pencil")
                         }
+                        .tint(.orange)
+
+                        if kind == .actual {
+                            Button {
+                                viewModel.presentIncreaseSheet(for: ticket)
+                            } label: {
+                                Label("Ifへ複製", systemImage: "wand.and.stars")
+                            }
+                            .tint(.indigo)
+                        }
+                    }
                 }
                 .onDelete { offsets in
                     viewModel.deleteTickets(at: offsets, from: tickets, in: race, context: context)
@@ -123,6 +132,7 @@ struct RaceDetailView: View {
 
 private struct TicketRow: View {
     @Bindable var ticket: Ticket
+    var onEdit: ((Ticket) -> Void)? = nil
 
     private var kind: RaceTicketKind {
         RaceTicketKind(rawValue: ticket.kind) ?? .actual
@@ -175,6 +185,10 @@ private struct TicketRow: View {
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onEdit?(ticket)
+        }
     }
 }
 
@@ -205,6 +219,10 @@ private struct AddTicketSheet: View {
                         .lineLimit(1...4)
                     TextField("賭金", value: $viewModel.stake, format: .number)
                         .keyboardType(.numberPad)
+                    TextField(payoutFieldLabel, value: $viewModel.payout, format: .number)
+                        .keyboardType(.numberPad)
+                    TextField(oddsFieldLabel, value: $viewModel.odds, format: .number.precision(.fractionLength(2)))
+                        .keyboardType(.decimalPad)
                 }
             }
             .navigationTitle(viewModel.ticketSheetTitle)
@@ -216,14 +234,23 @@ private struct AddTicketSheet: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") {
-                        viewModel.createTicket(for: race, context: context)
-                        dismiss()
+                    Button(viewModel.isEditingTicket ? "更新" : "保存") {
+                        if viewModel.saveTicket(for: race, context: context) {
+                            dismiss()
+                        }
                     }
-                    .disabled(!viewModel.canCreateTicket)
+                    .disabled(!viewModel.canSaveTicket)
                 }
             }
         }
+    }
+
+    private var payoutFieldLabel: String {
+        viewModel.ticketKind == .actual ? "払戻金" : "想定払戻金"
+    }
+
+    private var oddsFieldLabel: String {
+        viewModel.ticketKind == .actual ? "オッズ" : "想定オッズ"
     }
 }
 
