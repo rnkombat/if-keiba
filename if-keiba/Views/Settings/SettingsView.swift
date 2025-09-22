@@ -5,30 +5,29 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = SettingsViewModel()
 
-    @Query(
-        FetchDescriptor<Profile>(
-            sortBy: [
-                SortDescriptor(\Profile.createdAt, order: .forward)
-            ],
-            fetchLimit: 1
-        )
-    ) private var profiles: [Profile]
+    // fetchLimit は使わない
+    @Query private var profiles: [Profile]
 
     @Query(
         FetchDescriptor<Race>(
-            sortBy: [
-                SortDescriptor(\Race.date, order: .forward)
-            ]
+            sortBy: [SortDescriptor(\Race.date, order: .forward)]
         )
-    ) private var races: [Race]
+    )
+    private var races: [Race]
 
     @Query(
         FetchDescriptor<Ticket>(
-            sortBy: [
-                SortDescriptor(\Ticket.createdAt, order: .forward)
-            ]
+            sortBy: [SortDescriptor(\Ticket.createdAt, order: .forward)]
         )
-    ) private var tickets: [Ticket]
+    )
+    private var tickets: [Ticket]
+
+    // プレビューでも SettingsView() を直接呼べるよう明示 init
+    init() {
+        _profiles = Query(FetchDescriptor<Profile>()) // 必要なら sortBy を追加
+        _races    = Query(FetchDescriptor<Race>(sortBy: [SortDescriptor(\Race.date, order: .forward)]))
+        _tickets  = Query(FetchDescriptor<Ticket>(sortBy: [SortDescriptor(\Ticket.createdAt, order: .forward)]))
+    }
 
     private var profile: Profile? { profiles.first }
 
@@ -70,12 +69,8 @@ struct SettingsView: View {
 
     private var profileSection: some View {
         Section("プロフィール") {
-            TextField(
-                "初期残高",
-                value: $viewModel.initialBalance,
-                format: .number
-            )
-            .keyboardType(.numberPad)
+            TextField("初期残高", value: $viewModel.initialBalance, format: .number)
+                .keyboardType(.numberPad)
 
             Picker("給料日", selection: $viewModel.payday) {
                 Text("未設定").tag(Int?.none)
@@ -84,12 +79,8 @@ struct SettingsView: View {
                 }
             }
 
-            TextField(
-                "月自由枠",
-                value: $viewModel.monthlyFreeBudget,
-                format: .number
-            )
-            .keyboardType(.numberPad)
+            TextField("月自由枠", value: $viewModel.monthlyFreeBudget, format: .number)
+                .keyboardType(.numberPad)
 
             Picker("端数処理", selection: $viewModel.roundingRule) {
                 ForEach(MoneyRoundingRule.allCases, id: \.self) { rule in
@@ -115,8 +106,7 @@ struct SettingsView: View {
             .disabled(viewModel.isExporting)
 
             if viewModel.isExporting {
-                ProgressView()
-                    .progressViewStyle(.circular)
+                ProgressView().progressViewStyle(.circular)
             }
         }
     }

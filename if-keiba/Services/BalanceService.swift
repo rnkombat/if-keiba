@@ -48,7 +48,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 日次の残高ポイント列。
-    public func dailySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    func dailySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         computeSeries(grouping: .day, races: races, profile: profile)
     }
 
@@ -57,7 +57,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 月次の残高ポイント列。
-    public func monthlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    func monthlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         computeSeries(grouping: .month, races: races, profile: profile)
     }
 
@@ -66,7 +66,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 年次の残高ポイント列。
-    public func yearlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
+    func yearlySeries(for races: [Race], profile: Profile) -> [BalanceSeriesPoint] {
         computeSeries(grouping: .year, races: races, profile: profile)
     }
 
@@ -75,7 +75,7 @@ public final class BalanceService {
     ///   - races: 対象となるレース一覧。
     ///   - profile: 初期残高などの設定を保持するプロフィール。
     /// - Returns: 最終的な残高サマリー。
-    public func summarize(races: [Race], profile: Profile) -> BalanceSummary {
+    func summarize(races: [Race], profile: Profile) -> BalanceSummary {
         let dailyPoints = dailySeries(for: races, profile: profile)
         guard let last = dailyPoints.last else {
             return BalanceSummary(finalActual: profile.initialBalance, finalIf: profile.initialBalance)

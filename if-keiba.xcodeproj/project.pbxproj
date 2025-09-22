@@ -34,11 +34,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ContentView.swift,
-				Models/.gitkeep,
-				Resources/.gitkeep,
-				Services/.gitkeep,
-				Utils/.gitkeep,
-				ViewModels/.gitkeep,
 				Views/.gitkeep,
 			);
 			target = EB92BDC32E7FA69700EB6471 /* if-keiba */;

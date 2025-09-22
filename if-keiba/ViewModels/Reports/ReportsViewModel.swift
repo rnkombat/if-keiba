@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 struct ReportsMonthlySummary: Identifiable, Equatable {
     let month: Date

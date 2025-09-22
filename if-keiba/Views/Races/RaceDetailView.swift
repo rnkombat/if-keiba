@@ -29,7 +29,7 @@ struct RaceDetailView: View {
         List {
             Section("レース情報") {
                 DatePicker("日付", selection: $race.date, displayedComponents: .date)
-                    .onChange(of: race.date) { _ in
+                    .onChange(of: race.date) {
                         viewModel.markRaceUpdated(race)
                     }
                 TextField("レース名", text: Binding(
@@ -133,12 +133,13 @@ private struct TicketRow: View {
     }
 
     private var stakeText: String {
-        "賭金: \(ticket.stake, format: .number)"
+        "賭金: \(ticket.stake.formatted(.number))"
+
     }
 
     private var payoutText: String? {
         guard let payout = ticket.payout else { return nil }
-        return "払戻: \(payout, format: .number)"
+        return "払戻: \(payout.formatted(.number))"
     }
 
     private var oddsText: String? {
@@ -271,7 +272,7 @@ private struct IncreaseIfSheet: View {
                     Section("増額設定") {
                         TextField("増額額", value: $viewModel.increaseDelta, format: .number)
                             .keyboardType(.numberPad)
-                            .onChange(of: viewModel.increaseDelta) { _ in
+                            .onChange(of: viewModel.increaseDelta) {
                                 viewModel.ensureValidIncreaseDelta()
                             }
                         Stepper(value: $viewModel.increaseDelta, in: 0...1_000_000, step: 100) {

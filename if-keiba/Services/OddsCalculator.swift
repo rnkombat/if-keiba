@@ -81,7 +81,7 @@ public struct OddsCalculator {
         rounding: MoneyRounding = MoneyRounding()
     ) -> IncreasedIfCalculation? {
         guard baseStake > 0 else { return nil }
-        let sanitizedDelta = max<Int64>(0, deltaStake)
+        let sanitizedDelta = max(0, deltaStake)
         let newStake = baseStake + sanitizedDelta
 
         let ratio = calculateIncreaseRatio(stake: baseStake, payout: basePayout, odds: baseOdds)

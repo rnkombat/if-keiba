@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 enum RaceTicketKind: Int16, CaseIterable, Identifiable {
     case actual = 0

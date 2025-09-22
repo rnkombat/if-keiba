@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class Ticket {
     @Attribute(.unique) var id: UUID
-    @Relationship(inverse: \Race.tickets) var race: Race?
+    @Relationship var race: Race?
     var kind: Int16
     var betType: Int16
     var selectionsJSON: String

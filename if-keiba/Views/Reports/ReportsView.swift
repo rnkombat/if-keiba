@@ -45,9 +45,8 @@ struct ReportsView: View {
             .navigationTitle("月次レポート")
         }
         .task(id: dataSignature) {
-            await MainActor.run {
-                viewModel.update(races: races, profile: profiles.first)
-            }
+            // ReportsViewModel は @MainActor。ViewBuilder 内ではないので通常呼びでOK。
+            viewModel.update(races: races, profile: profiles.first)
         }
     }
 }
@@ -91,29 +90,26 @@ private struct ReportsMonthlyRow: View {
     }
 
     private func valueRow(title: String, total: Int64, change: Int64, accent: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        // ← ここで文字列と色を計算しておくのがポイント（ViewBuilder外）
+        let formattedTotal = total.formatted(.currency(code: "JPY"))
+        let formattedChange = change.formatted(.currency(code: "JPY"))
+        let prefix = change > 0 ? "+" : (change < 0 ? "" : "±")
+        let changeColor: Color = change == 0 ? .secondary : (change > 0 ? .green : .red)
+
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Circle()
                     .fill(accent)
                     .frame(width: 8, height: 8)
                 Text(title)
                 Spacer()
-                Text(total.formatted(.currency(code: "JPY")))
+                Text(formattedTotal)
                     .monospacedDigit()
             }
 
-            let formattedChange = change.formatted(.currency(code: "JPY"))
-            let prefix: String
-            if change > 0 {
-                prefix = "+"
-            } else if change < 0 {
-                prefix = ""
-            } else {
-                prefix = "±"
-            }
             Text("前月比 \(prefix)\(formattedChange)")
                 .font(.caption)
-                .foregroundStyle(change == 0 ? Color.secondary : (change > 0 ? Color.green : Color.red))
+                .foregroundStyle(changeColor)
                 .monospacedDigit()
         }
     }

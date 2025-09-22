@@ -27,7 +27,7 @@ public struct CSVExporter {
     /// レース情報を CSV 文字列に変換します。
     /// - Parameter races: 書き出し対象のレース一覧。
     /// - Returns: 仕様に沿った CSV 文字列。
-    public func exportRaces(_ races: [Race]) -> String {
+    func exportRaces(_ races: [Race]) -> String {
         let header = "raceId,date,name,memo,createdAt,updatedAt"
         let sortedRaces = races.sorted { lhs, rhs in
             if lhs.date == rhs.date {
@@ -57,7 +57,7 @@ public struct CSVExporter {
     /// 投票情報を CSV 文字列に変換します。
     /// - Parameter tickets: 書き出し対象の投票一覧。
     /// - Returns: 仕様に沿った CSV 文字列。
-    public func exportTickets(_ tickets: [Ticket]) -> String {
+    func exportTickets(_ tickets: [Ticket]) -> String {
         let header = "ticketId,raceId,kind,betType,stake,payout,odds,linkedActualId,selectionsJson,createdAt,updatedAt"
         let sortedTickets = tickets.sorted { lhs, rhs in
             if lhs.createdAt == rhs.createdAt {
@@ -91,7 +91,7 @@ public struct CSVExporter {
     ///   - races: レース一覧。
     ///   - tickets: 投票一覧。
     /// - Returns: 各 CSV の文字列をまとめた結果。
-    public func exportAll(races: [Race], tickets: [Ticket]) -> CSVExportResult {
+    func exportAll(races: [Race], tickets: [Ticket]) -> CSVExportResult {
         let racesCSV = exportRaces(races)
         let ticketsCSV = exportTickets(tickets)
         return CSVExportResult(racesCSV: racesCSV, ticketsCSV: ticketsCSV)
