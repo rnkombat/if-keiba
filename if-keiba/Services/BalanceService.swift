@@ -5,11 +5,33 @@ public struct BalanceSeriesPoint: Hashable {
     public let date: Date
     public let actualBalance: Int64
     public let ifBalance: Int64
+    public let actualProfit: Int64
+    public let ifProfit: Int64
+    public let actualTotalStake: Int64
+    public let actualTotalPayout: Int64
+    public let ifTotalStake: Int64
+    public let ifTotalPayout: Int64
 
-    public init(date: Date, actualBalance: Int64, ifBalance: Int64) {
+    public init(
+        date: Date,
+        actualBalance: Int64,
+        ifBalance: Int64,
+        actualProfit: Int64,
+        ifProfit: Int64,
+        actualTotalStake: Int64,
+        actualTotalPayout: Int64,
+        ifTotalStake: Int64,
+        ifTotalPayout: Int64
+    ) {
         self.date = date
         self.actualBalance = actualBalance
         self.ifBalance = ifBalance
+        self.actualProfit = actualProfit
+        self.ifProfit = ifProfit
+        self.actualTotalStake = actualTotalStake
+        self.actualTotalPayout = actualTotalPayout
+        self.ifTotalStake = ifTotalStake
+        self.ifTotalPayout = ifTotalPayout
     }
 }
 
@@ -33,8 +55,12 @@ public final class BalanceService {
     }
 
     private struct AggregatedChange {
-        var actual: Int64 = 0
-        var ifScenario: Int64 = 0
+        var actualNet: Int64 = 0
+        var ifNet: Int64 = 0
+        var actualStake: Int64 = 0
+        var actualPayout: Int64 = 0
+        var ifStake: Int64 = 0
+        var ifPayout: Int64 = 0
     }
 
     private let calendar: Calendar
@@ -91,21 +117,59 @@ public final class BalanceService {
 
         guard let range = determineDateRange(grouping: grouping, races: races, groupedChanges: groupedChanges) else {
             let referenceDate = normalize(date: profile.createdAt, grouping: grouping)
-            return [BalanceSeriesPoint(date: referenceDate, actualBalance: initialBalance, ifBalance: initialBalance)]
+            return [
+                BalanceSeriesPoint(
+                    date: referenceDate,
+                    actualBalance: initialBalance,
+                    ifBalance: initialBalance,
+                    actualProfit: 0,
+                    ifProfit: 0,
+                    actualTotalStake: 0,
+                    actualTotalPayout: 0,
+                    ifTotalStake: 0,
+                    ifTotalPayout: 0
+                )
+            ]
         }
 
         var results: [BalanceSeriesPoint] = []
         results.reserveCapacity(groupedChanges.count + 1)
 
-        var runningActual = initialBalance
-        var runningIf = initialBalance
+        var runningActualNet: Int64 = 0
+        var runningIfNet: Int64 = 0
+        var runningActualStake: Int64 = 0
+        var runningActualPayout: Int64 = 0
+        var runningIfStake: Int64 = 0
+        var runningIfPayout: Int64 = 0
 
         var current = range.start
         while current <= range.end {
             let delta = groupedChanges[current] ?? AggregatedChange()
-            runningActual += delta.actual
-            runningIf += delta.ifScenario
-            results.append(BalanceSeriesPoint(date: current, actualBalance: runningActual, ifBalance: runningIf))
+            runningActualNet += delta.actualNet
+            runningIfNet += delta.ifNet
+            runningActualStake += delta.actualStake
+            runningActualPayout += delta.actualPayout
+            runningIfStake += delta.ifStake
+            runningIfPayout += delta.ifPayout
+
+            let actualBalance = initialBalance + runningActualNet
+            let ifBalance = initialBalance + runningActualNet + runningIfNet
+            let actualProfit = runningActualNet
+            let ifProfit = runningActualNet + runningIfNet
+
+            results.append(
+                BalanceSeriesPoint(
+                    date: current,
+                    actualBalance: actualBalance,
+                    ifBalance: ifBalance,
+                    actualProfit: actualProfit,
+                    ifProfit: ifProfit,
+                    actualTotalStake: runningActualStake,
+                    actualTotalPayout: runningActualPayout,
+                    ifTotalStake: runningIfStake,
+                    ifTotalPayout: runningIfPayout
+                )
+            )
 
             guard let next = increment(date: current, grouping: grouping) else { break }
             current = next
@@ -123,12 +187,16 @@ public final class BalanceService {
 
             for ticket in race.tickets {
                 let net = (ticket.payout ?? 0) - ticket.stake
+                let payoutValue = ticket.payout ?? 0
                 switch ticket.kind {
                 case 0: // Actual
-                    change.actual += net
-                    change.ifScenario += net
+                    change.actualNet += net
+                    change.actualStake += ticket.stake
+                    change.actualPayout += payoutValue
                 case 1: // If
-                    change.ifScenario += net
+                    change.ifNet += net
+                    change.ifStake += ticket.stake
+                    change.ifPayout += payoutValue
                 default:
                     continue
                 }
