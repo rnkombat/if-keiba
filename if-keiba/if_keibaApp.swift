@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import SwiftData   // ← 追加
 
 @main
 struct IfKeibaApp: App {
