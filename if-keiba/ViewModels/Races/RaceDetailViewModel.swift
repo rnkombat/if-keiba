@@ -8,6 +8,30 @@ final class RaceDetailViewModel: ObservableObject {
     @Published var betType: RaceTicketBetType = .win
     @Published var selectionsJSON: String = "[]"
     @Published var stake: Int = 1000
+    @Published var isPresentingIncreaseSheet = false {
+        didSet {
+            if !isPresentingIncreaseSheet {
+                increaseBaseTicket = nil
+                increaseDelta = 0
+            }
+        }
+    }
+    @Published var increaseDelta: Int = 0
+    @Published private(set) var increaseBaseTicket: Ticket?
+
+    private let oddsCalculator: OddsCalculator
+    private let moneyRounding: MoneyRounding
+    private let roundingRule: MoneyRoundingRule
+
+    init(
+        oddsCalculator: OddsCalculator = OddsCalculator(),
+        moneyRounding: MoneyRounding = MoneyRounding(),
+        roundingRule: MoneyRoundingRule = .nearest
+    ) {
+        self.oddsCalculator = oddsCalculator
+        self.moneyRounding = moneyRounding
+        self.roundingRule = roundingRule
+    }
 
     var ticketSheetTitle: String {
         switch ticketKind {
@@ -22,6 +46,23 @@ final class RaceDetailViewModel: ObservableObject {
         stake > 0
     }
 
+    var increasePreview: OddsCalculator.IncreasedIfCalculation? {
+        guard let base = increaseBaseTicket else { return nil }
+        return oddsCalculator.calculateIncreasedIf(
+            baseStake: base.stake,
+            basePayout: base.payout,
+            baseOdds: base.odds,
+            deltaStake: sanitizedIncreaseDelta,
+            roundingRule: roundingRule,
+            rounding: moneyRounding
+        )
+    }
+
+    var canCreateIncreasedIf: Bool {
+        guard let preview = increasePreview else { return false }
+        return preview.stake > 0 && increaseBaseTicket != nil
+    }
+
     func presentTicketSheet(kind: RaceTicketKind) {
         ticketKind = kind
         resetTicketForm()
@@ -31,6 +72,22 @@ final class RaceDetailViewModel: ObservableObject {
     func dismissTicketSheet() {
         isPresentingTicketSheet = false
         resetTicketForm()
+    }
+
+    func presentIncreaseSheet(for ticket: Ticket) {
+        increaseBaseTicket = ticket
+        increaseDelta = 0
+        isPresentingIncreaseSheet = true
+    }
+
+    func dismissIncreaseSheet() {
+        isPresentingIncreaseSheet = false
+    }
+
+    func ensureValidIncreaseDelta() {
+        if increaseDelta < 0 {
+            increaseDelta = 0
+        }
     }
 
     func resetTicketForm() {
@@ -71,5 +128,51 @@ final class RaceDetailViewModel: ObservableObject {
         }
         race.updatedAt = now
         try? context.save()
+    }
+
+    @discardableResult
+    func createIncreasedIf(for race: Race, context: ModelContext) -> Bool {
+        guard let base = increaseBaseTicket else { return false }
+        guard let preview = oddsCalculator.calculateIncreasedIf(
+            baseStake: base.stake,
+            basePayout: base.payout,
+            baseOdds: base.odds,
+            deltaStake: sanitizedIncreaseDelta,
+            roundingRule: roundingRule,
+            rounding: moneyRounding
+        ) else { return false }
+
+        let now = Date()
+        let newOdds: Double?
+        if let odds = base.odds {
+            newOdds = odds
+        } else if base.payout != nil, let ratio = preview.ratio {
+            newOdds = ratio
+        } else {
+            newOdds = nil
+        }
+
+        let ticket = Ticket(
+            race: race,
+            kind: RaceTicketKind.ifScenario.rawValue,
+            betType: base.betType,
+            selectionsJSON: base.selectionsJSON,
+            stake: preview.stake,
+            payout: preview.payout,
+            odds: newOdds,
+            linkedActualId: base.id,
+            now: now
+        )
+
+        context.insert(ticket)
+        race.updatedAt = now
+        ticket.updatedAt = now
+        try? context.save()
+        isPresentingIncreaseSheet = false
+        return true
+    }
+
+    private var sanitizedIncreaseDelta: Int64 {
+        Int64(max(0, increaseDelta))
     }
 }

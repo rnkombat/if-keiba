@@ -75,6 +75,10 @@ struct RaceDetailView: View {
             AddTicketSheet(viewModel: viewModel, race: race)
                 .presentationDetents([.medium, .large])
         }
+        .sheet(isPresented: $viewModel.isPresentingIncreaseSheet) {
+            IncreaseIfSheet(viewModel: viewModel, race: race)
+                .presentationDetents([.medium, .large])
+        }
     }
 
     @ViewBuilder
@@ -90,6 +94,16 @@ struct RaceDetailView: View {
             } else {
                 ForEach(tickets) { ticket in
                     TicketRow(ticket: ticket)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if kind == .actual {
+                                Button {
+                                    viewModel.presentIncreaseSheet(for: ticket)
+                                } label: {
+                                    Label("Ifへ複製", systemImage: "wand.and.stars")
+                                }
+                                .tint(.indigo)
+                            }
+                        }
                 }
                 .onDelete { offsets in
                     viewModel.deleteTickets(at: offsets, from: tickets, in: race, context: context)
@@ -206,6 +220,119 @@ private struct AddTicketSheet: View {
                         dismiss()
                     }
                     .disabled(!viewModel.canCreateTicket)
+                }
+            }
+        }
+    }
+}
+
+private struct IncreaseIfSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @ObservedObject var viewModel: RaceDetailViewModel
+    var race: Race
+
+    private var baseTicket: Ticket? { viewModel.increaseBaseTicket }
+    private var preview: OddsCalculator.IncreasedIfCalculation? { viewModel.increasePreview }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let baseTicket {
+                    Section("Actualチケット") {
+                        HStack {
+                            Text("賭金")
+                            Spacer()
+                            Text("\(baseTicket.stake, format: .number)")
+                        }
+                        if let payout = baseTicket.payout {
+                            HStack {
+                                Text("払戻")
+                                Spacer()
+                                Text("\(payout, format: .number)")
+                            }
+                        } else {
+                            HStack {
+                                Text("払戻")
+                                Spacer()
+                                Text("未入力")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if let odds = baseTicket.odds {
+                            HStack {
+                                Text("オッズ")
+                                Spacer()
+                                Text(odds, format: .number.precision(.fractionLength(2)))
+                            }
+                        }
+                    }
+
+                    Section("増額設定") {
+                        TextField("増額額", value: $viewModel.increaseDelta, format: .number)
+                            .keyboardType(.numberPad)
+                            .onChange(of: viewModel.increaseDelta) { _ in
+                                viewModel.ensureValidIncreaseDelta()
+                            }
+                        Stepper(value: $viewModel.increaseDelta, in: 0...1_000_000, step: 100) {
+                            Text("現在の増額: \(viewModel.increaseDelta, format: .number)")
+                        }
+                    }
+
+                    if let preview {
+                        Section("Ifプレビュー") {
+                            HStack {
+                                Text("賭金")
+                                Spacer()
+                                Text("\(preview.stake, format: .number)")
+                            }
+                            if let payout = preview.payout {
+                                HStack {
+                                    Text("払戻")
+                                    Spacer()
+                                    Text("\(payout, format: .number)")
+                                }
+                            } else {
+                                HStack {
+                                    Text("払戻")
+                                    Spacer()
+                                    Text("計算不可")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            if let ratio = preview.ratio {
+                                HStack {
+                                    Text("倍率")
+                                    Spacer()
+                                    Text(ratio, format: .number.precision(.fractionLength(2)))
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "Actualチケットが見つかりません",
+                        systemImage: "questionmark.circle",
+                        description: Text("もう一度操作をやり直してください。")
+                    )
+                    .listRowSeparator(.hidden)
+                }
+            }
+            .navigationTitle("Ifへ複製（増額）")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") {
+                        viewModel.dismissIncreaseSheet()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("作成") {
+                        if viewModel.createIncreasedIf(for: race, context: context) {
+                            dismiss()
+                        }
+                    }
+                    .disabled(!viewModel.canCreateIncreasedIf)
                 }
             }
         }

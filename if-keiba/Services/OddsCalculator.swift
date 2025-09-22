@@ -2,6 +2,20 @@ import Foundation
 
 /// オッズや増額Ifに関する算出ロジックを提供するサービス。
 public struct OddsCalculator {
+    public struct IncreasedIfCalculation {
+        public let stake: Int64
+        public let payout: Int64?
+        public let ratio: Double?
+        public let delta: Int64
+
+        public init(stake: Int64, payout: Int64?, ratio: Double?, delta: Int64) {
+            self.stake = stake
+            self.payout = payout
+            self.ratio = ratio
+            self.delta = delta
+        }
+    }
+  
     public init() {}
 
     /// Actual の投資額とオッズから想定払戻金を算出します。
@@ -34,5 +48,51 @@ public struct OddsCalculator {
         guard stake != 0 else { return 0 }
         // TODO: 仕様に沿った収益率計算を実装する。
         return Double(payout) / Double(stake)
+    }
+
+    /// ActualチケットからIfチケットを増額複製する際の倍率を計算します。
+    /// - Parameters:
+    ///   - stake: Actualチケットの賭金。
+    ///   - payout: Actualチケットの払戻金。
+    ///   - odds: Actualチケットのオッズ。
+    /// - Returns: 複製時に利用する倍率（情報が不足している場合は `nil`）。
+    public func calculateIncreaseRatio(stake: Int64, payout: Int64?, odds: Double?) -> Double? {
+        guard stake > 0 else { return nil }
+        if let payout { return Double(payout) / Double(stake) }
+        if let odds, odds > 0 { return odds }
+        return nil
+    }
+
+    /// Actualチケットを増額してIfチケットを作成する際の結果を計算します。
+    /// - Parameters:
+    ///   - baseStake: Actualチケットの賭金。
+    ///   - basePayout: Actualチケットの払戻金。
+    ///   - baseOdds: Actualチケットのオッズ。
+    ///   - deltaStake: 追加投資額。
+    ///   - roundingRule: 端数処理規則。
+    ///   - rounding: 丸め処理ユーティリティ。
+    /// - Returns: 増額後の賭金と払戻金のプレビュー。
+    public func calculateIncreasedIf(
+        baseStake: Int64,
+        basePayout: Int64?,
+        baseOdds: Double?,
+        deltaStake: Int64,
+        roundingRule: MoneyRoundingRule,
+        rounding: MoneyRounding = MoneyRounding()
+    ) -> IncreasedIfCalculation? {
+        guard baseStake > 0 else { return nil }
+        let sanitizedDelta = max<Int64>(0, deltaStake)
+        let newStake = baseStake + sanitizedDelta
+
+        let ratio = calculateIncreaseRatio(stake: baseStake, payout: basePayout, odds: baseOdds)
+        var payoutResult: Int64?
+        if let ratio {
+            let stakeDecimal = Decimal(newStake)
+            let ratioDecimal = Decimal(ratio)
+            let expected = stakeDecimal * ratioDecimal
+            payoutResult = rounding.roundToCurrencyUnit(expected, rule: roundingRule)
+        }
+
+        return IncreasedIfCalculation(stake: newStake, payout: payoutResult, ratio: ratio, delta: sanitizedDelta)
     }
 }
