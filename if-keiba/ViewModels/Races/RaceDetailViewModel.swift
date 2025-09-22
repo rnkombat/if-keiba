@@ -9,6 +9,8 @@ final class RaceDetailViewModel: ObservableObject {
     @Published var betType: RaceTicketBetType = .win
     @Published var selectionsJSON: String = "[]"
     @Published var stake: Int = 1000
+    @Published var payout: Int?
+    @Published var odds: Double?
     @Published var isPresentingIncreaseSheet = false {
         didSet {
             if !isPresentingIncreaseSheet {
@@ -19,6 +21,7 @@ final class RaceDetailViewModel: ObservableObject {
     }
     @Published var increaseDelta: Int = 0
     @Published private(set) var increaseBaseTicket: Ticket?
+    @Published private(set) var editingTicket: Ticket?
 
     private let oddsCalculator: OddsCalculator
     private let moneyRounding: MoneyRounding
@@ -35,16 +38,22 @@ final class RaceDetailViewModel: ObservableObject {
     }
 
     var ticketSheetTitle: String {
+        let base: String
         switch ticketKind {
         case .actual:
-            return "Actualチケット"
+            base = "Actualチケット"
         case .ifScenario:
-            return "Ifチケット"
+            base = "Ifチケット"
         }
+        return isEditingTicket ? "\(base)を編集" : "\(base)を追加"
     }
 
-    var canCreateTicket: Bool {
-        stake > 0
+    var isEditingTicket: Bool { editingTicket != nil }
+
+    var canSaveTicket: Bool {
+        sanitizedStake > 0
+            && sanitizedPayoutIsValid
+            && sanitizedOddsIsValid
     }
 
     var increasePreview: OddsCalculator.IncreasedIfCalculation? {
@@ -66,12 +75,14 @@ final class RaceDetailViewModel: ObservableObject {
 
     func presentTicketSheet(kind: RaceTicketKind) {
         ticketKind = kind
+        editingTicket = nil
         resetTicketForm()
         isPresentingTicketSheet = true
     }
 
     func dismissTicketSheet() {
         isPresentingTicketSheet = false
+        editingTicket = nil
         resetTicketForm()
     }
 
@@ -79,6 +90,17 @@ final class RaceDetailViewModel: ObservableObject {
         increaseBaseTicket = ticket
         increaseDelta = 0
         isPresentingIncreaseSheet = true
+    }
+
+    func presentTicketEditor(for ticket: Ticket) {
+        editingTicket = ticket
+        ticketKind = RaceTicketKind(rawValue: ticket.kind) ?? .actual
+        betType = RaceTicketBetType(rawValue: ticket.betType) ?? .win
+        selectionsJSON = ticket.selectionsJSON
+        stake = Int(ticket.stake)
+        payout = ticket.payout.flatMap { Int($0) }
+        odds = ticket.odds
+        isPresentingTicketSheet = true
     }
 
     func dismissIncreaseSheet() {
@@ -95,30 +117,75 @@ final class RaceDetailViewModel: ObservableObject {
         betType = .win
         selectionsJSON = "[]"
         stake = 1000
+        payout = nil
+        odds = nil
     }
 
     func markRaceUpdated(_ race: Race) {
         race.updatedAt = .now
     }
 
-    func createTicket(for race: Race, context: ModelContext) {
-        guard canCreateTicket else { return }
+    @discardableResult
+    func saveTicket(for race: Race, context: ModelContext) -> Bool {
+        guard canSaveTicket else { return false }
+        let success: Bool
+        if let editingTicket {
+            success = updateTicket(
+                editingTicket,
+                for: race,
+                context: context
+            )
+        } else {
+            success = createTicket(for: race, context: context)
+        }
+        if success {
+            editingTicket = nil
+            resetTicketForm()
+            isPresentingTicketSheet = false
+        }
+        return success
+    }
+
+    private func createTicket(for race: Race, context: ModelContext) -> Bool {
         let now = Date()
-        let sanitizedSelections = selectionsJSON.trimmingCharacters(in: .whitespacesAndNewlines)
         let ticket = Ticket(
             race: race,
             kind: ticketKind.rawValue,
             betType: betType.rawValue,
-            selectionsJSON: sanitizedSelections.isEmpty ? "[]" : sanitizedSelections,
-            stake: Int64(stake),
+            selectionsJSON: sanitizedSelections,
+            stake: sanitizedStake,
+            payout: sanitizedPayout,
+            odds: sanitizedOdds,
             now: now
         )
         context.insert(ticket)
         race.updatedAt = now
         ticket.updatedAt = now
-        try? context.save()
-        resetTicketForm()
-        isPresentingTicketSheet = false
+        do {
+            try context.save()
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func updateTicket(_ ticket: Ticket, for race: Race, context: ModelContext) -> Bool {
+        let now = Date()
+        ticket.kind = ticketKind.rawValue
+        ticket.betType = betType.rawValue
+        ticket.selectionsJSON = sanitizedSelections
+        ticket.stake = sanitizedStake
+        ticket.payout = sanitizedPayout
+        ticket.odds = sanitizedOdds
+        ticket.updatedAt = now
+        ticket.race = race
+        race.updatedAt = now
+        do {
+            try context.save()
+            return true
+        } catch {
+            return false
+        }
     }
 
     func deleteTickets(at offsets: IndexSet, from tickets: [Ticket], in race: Race, context: ModelContext) {
@@ -175,5 +242,32 @@ final class RaceDetailViewModel: ObservableObject {
 
     private var sanitizedIncreaseDelta: Int64 {
         Int64(max(0, increaseDelta))
+    }
+
+    private var sanitizedStake: Int64 {
+        Int64(max(0, stake))
+    }
+
+    private var sanitizedSelections: String {
+        let trimmed = selectionsJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "[]" : trimmed
+    }
+
+    private var sanitizedPayout: Int64? {
+        guard let payout else { return nil }
+        return payout >= 0 ? Int64(payout) : nil
+    }
+
+    private var sanitizedOdds: Double? {
+        guard let odds else { return nil }
+        return odds > 0 ? odds : nil
+    }
+
+    private var sanitizedPayoutIsValid: Bool {
+        payout == nil || payout! >= 0
+    }
+
+    private var sanitizedOddsIsValid: Bool {
+        odds == nil || odds! > 0
     }
 }
