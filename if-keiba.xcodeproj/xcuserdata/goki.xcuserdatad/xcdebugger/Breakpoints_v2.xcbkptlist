@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "71B7FC73-3704-4706-B452-EE3C492AF726"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "F9454957-7907-4B07-BE64-E9D255257357"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "if-keiba/Services/CSVExporter.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "36"
+            endingLineNumber = "36"
+            landmarkName = "exportTickets(_:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "F9454957-7907-4B07-BE64-E9D255257357 - 8719688ae62c7f44"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "if_keiba.CSVExporter.exportTickets(Swift.Array&lt;if_keiba.Ticket&gt;) -&gt; Swift.String"
+                  moduleName = "if-keiba.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/goki/dev/ios/if-keiba/if-keiba/Services/CSVExporter.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "36"
+                  endingLineNumber = "36">
+               </Location>
+               <Location
+                  uuid = "F9454957-7907-4B07-BE64-E9D255257357 - 434cc9214d9aeca4"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (Swift.Double) -&gt; Swift.String in if_keiba.CSVExporter.exportTickets(Swift.Array&lt;if_keiba.Ticket&gt;) -&gt; Swift.String"
+                  moduleName = "if-keiba.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/goki/dev/ios/if-keiba/if-keiba/Services/CSVExporter.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "36"
+                  endingLineNumber = "36">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>
