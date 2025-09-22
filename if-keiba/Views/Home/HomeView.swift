@@ -5,6 +5,7 @@ import Charts
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var selectedEntry: HomeBalanceDataPoint?
+    @State private var chartKind: ChartKind = .balance
     @Query(
         FetchDescriptor<Race>(
             sortBy: [
@@ -22,6 +23,36 @@ struct HomeView: View {
 
     private var dataSignature: BalanceDataSignature {
         BalanceDataSignature(profile: profiles.first, races: races)
+    }
+
+    private enum ChartKind: String, CaseIterable, Identifiable {
+        case balance
+        case profit
+        case returnRate
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .balance:
+                return "日次残高"
+            case .profit:
+                return "日次収支"
+            case .returnRate:
+                return "回収率"
+            }
+        }
+
+        var pickerLabel: String {
+            switch self {
+            case .balance:
+                return "残高"
+            case .profit:
+                return "収支"
+            case .returnRate:
+                return "回収率"
+            }
+        }
     }
 
     var body: some View {
@@ -42,6 +73,9 @@ struct HomeView: View {
             }
         }
         .onChange(of: viewModel.dailySeries) { _ in
+            selectedEntry = nil
+        }
+        .onChange(of: chartKind) { _ in
             selectedEntry = nil
         }
     }
@@ -65,8 +99,16 @@ struct HomeView: View {
 
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("日次残高")
+            Text(chartKind.title)
                 .font(.headline)
+
+            Picker("", selection: $chartKind) {
+                ForEach(ChartKind.allCases) { kind in
+                    Text(kind.pickerLabel).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+
             if viewModel.dailySeries.isEmpty {
                 ContentUnavailableView(
                     "チャートが表示できません",
@@ -77,19 +119,54 @@ struct HomeView: View {
             } else {
                 Chart {
                     ForEach(viewModel.dailySeries) { point in
-                        LineMark(
-                            x: .value("日付", point.date),
-                            y: .value("Actual", point.actualBalance)
-                        )
-                        .foregroundStyle(by: .value("系列", "Actual"))
-                        .interpolationMethod(.catmullRom)
+                        switch chartKind {
+                        case .balance:
+                            LineMark(
+                                x: .value("日付", point.date),
+                                y: .value("Actual", point.actualBalance)
+                            )
+                            .foregroundStyle(by: .value("系列", "Actual"))
+                            .interpolationMethod(.linear)
 
-                        LineMark(
-                            x: .value("日付", point.date),
-                            y: .value("If", point.ifBalance)
-                        )
-                        .foregroundStyle(by: .value("系列", "If"))
-                        .interpolationMethod(.catmullRom)
+                            LineMark(
+                                x: .value("日付", point.date),
+                                y: .value("If", point.ifBalance)
+                            )
+                            .foregroundStyle(by: .value("系列", "If"))
+                            .interpolationMethod(.linear)
+                        case .profit:
+                            LineMark(
+                                x: .value("日付", point.date),
+                                y: .value("Actual", point.actualProfit)
+                            )
+                            .foregroundStyle(by: .value("系列", "Actual"))
+                            .interpolationMethod(.linear)
+
+                            LineMark(
+                                x: .value("日付", point.date),
+                                y: .value("If", point.ifProfit)
+                            )
+                            .foregroundStyle(by: .value("系列", "If"))
+                            .interpolationMethod(.linear)
+                        case .returnRate:
+                            if let actualRate = point.actualReturnRate {
+                                LineMark(
+                                    x: .value("日付", point.date),
+                                    y: .value("Actual", actualRate)
+                                )
+                                .foregroundStyle(by: .value("系列", "Actual"))
+                                .interpolationMethod(.linear)
+                            }
+
+                            if let ifRate = point.ifReturnRate {
+                                LineMark(
+                                    x: .value("日付", point.date),
+                                    y: .value("If", ifRate)
+                                )
+                                .foregroundStyle(by: .value("系列", "If"))
+                                .interpolationMethod(.linear)
+                            }
+                        }
                     }
 
                     if let selectedEntry {
@@ -100,23 +177,71 @@ struct HomeView: View {
                                 tooltipView(for: selectedEntry)
                             }
 
-                        PointMark(
-                            x: .value("日付", selectedEntry.date),
-                            y: .value("Actual", selectedEntry.actualBalance)
-                        )
-                        .foregroundStyle(Color.blue)
-                        .symbolSize(70)
+                        switch chartKind {
+                        case .balance:
+                            PointMark(
+                                x: .value("日付", selectedEntry.date),
+                                y: .value("Actual", selectedEntry.actualBalance)
+                            )
+                            .foregroundStyle(Color.blue)
+                            .symbolSize(70)
 
-                        PointMark(
-                            x: .value("日付", selectedEntry.date),
-                            y: .value("If", selectedEntry.ifBalance)
-                        )
-                        .foregroundStyle(Color.green)
-                        .symbolSize(70)
+                            PointMark(
+                                x: .value("日付", selectedEntry.date),
+                                y: .value("If", selectedEntry.ifBalance)
+                            )
+                            .foregroundStyle(Color.green)
+                            .symbolSize(70)
+                        case .profit:
+                            PointMark(
+                                x: .value("日付", selectedEntry.date),
+                                y: .value("Actual", selectedEntry.actualProfit)
+                            )
+                            .foregroundStyle(Color.blue)
+                            .symbolSize(70)
+
+                            PointMark(
+                                x: .value("日付", selectedEntry.date),
+                                y: .value("If", selectedEntry.ifProfit)
+                            )
+                            .foregroundStyle(Color.green)
+                            .symbolSize(70)
+                        case .returnRate:
+                            if let actualRate = selectedEntry.actualReturnRate {
+                                PointMark(
+                                    x: .value("日付", selectedEntry.date),
+                                    y: .value("Actual", actualRate)
+                                )
+                                .foregroundStyle(Color.blue)
+                                .symbolSize(70)
+                            }
+
+                            if let ifRate = selectedEntry.ifReturnRate {
+                                PointMark(
+                                    x: .value("日付", selectedEntry.date),
+                                    y: .value("If", ifRate)
+                                )
+                                .foregroundStyle(Color.green)
+                                .symbolSize(70)
+                            }
+                        }
                     }
                 }
                 .chartYAxis {
-                    AxisMarks(position: .leading)
+                    AxisMarks(position: .leading) { value in
+                        if chartKind == .returnRate, let rate = value.as(Double.self) {
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel {
+                                Text(rate, format: .percent.precision(.fractionLength(0...1)))
+                                    .monospacedDigit()
+                            }
+                        } else {
+                            AxisGridLine()
+                            AxisTick()
+                            AxisValueLabel()
+                        }
+                    }
                 }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5))
@@ -162,8 +287,17 @@ struct HomeView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            seriesRow(label: "Actual", value: entry.actualBalance, color: .blue)
-            seriesRow(label: "If", value: entry.ifBalance, color: .green)
+            switch chartKind {
+            case .balance:
+                seriesRow(label: "Actual", valueText: formattedCurrency(entry.actualBalance), color: .blue)
+                seriesRow(label: "If", valueText: formattedCurrency(entry.ifBalance), color: .green)
+            case .profit:
+                seriesRow(label: "Actual", valueText: formattedCurrency(entry.actualProfit), color: .blue)
+                seriesRow(label: "If", valueText: formattedCurrency(entry.ifProfit), color: .green)
+            case .returnRate:
+                seriesRow(label: "Actual", valueText: formattedPercent(entry.actualReturnRate), color: .blue)
+                seriesRow(label: "If", valueText: formattedPercent(entry.ifReturnRate), color: .green)
+            }
         }
         .padding(8)
         .background(
@@ -173,7 +307,16 @@ struct HomeView: View {
         )
     }
 
-    private func seriesRow(label: String, value: Int64, color: Color) -> some View {
+    private func formattedCurrency(_ value: Int64) -> String {
+        value.formatted(.currency(code: "JPY"))
+    }
+
+    private func formattedPercent(_ value: Double?) -> String {
+        guard let value else { return "—" }
+        return value.formatted(.percent.precision(.fractionLength(0...1)))
+    }
+
+    private func seriesRow(label: String, valueText: String, color: Color) -> some View {
         HStack(spacing: 8) {
             Circle()
                 .fill(color)
@@ -185,7 +328,7 @@ struct HomeView: View {
 
             Spacer()
 
-            Text(value.formatted(.currency(code: "JPY")))
+            Text(valueText)
                 .font(.caption)
                 .monospacedDigit()
         }
