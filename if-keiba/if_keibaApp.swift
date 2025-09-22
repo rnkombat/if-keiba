@@ -1,4 +1,6 @@
+// if-keiba/if-keiba/if_keibaApp.swift
 import SwiftUI
+import SwiftData   // ← 追加
 
 @main
 struct IfKeibaApp: App {
@@ -6,6 +8,6 @@ struct IfKeibaApp: App {
         WindowGroup {
             RootView()
         }
-        .modelContainer(for: [Profile.self, Race.self, Ticket.self])
+        .modelContainer(for: [Profile.self, Race.self, Ticket.self]) // OK
     }
 }

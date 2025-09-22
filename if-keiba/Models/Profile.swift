@@ -1,3 +1,4 @@
+// if-keiba/if-keiba/Models/Profile.swift
 import Foundation
 import SwiftData
 
@@ -7,8 +8,8 @@ final class Profile {
     var initialBalance: Int64
     var payday: Int?
     var monthlyFreeBudget: Int64
-    var oddsMode: Int16
-    var roundingRule: Int16
+    var oddsMode: Int16      // 0: 手入力, 1: オッズ方式
+    var roundingRule: Int16  // 0: 四捨五入, 1: 切上, 2: 切捨
     var createdAt: Date
     var updatedAt: Date
 
