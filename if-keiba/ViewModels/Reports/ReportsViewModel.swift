@@ -15,9 +15,20 @@ struct ReportsMonthlySummary: Identifiable, Equatable {
     }
 }
 
+struct ReportsCumulativeSummary: Equatable {
+    let initialBalance: Int64
+    let actualTotal: Int64
+    let actualPlusIfTotal: Int64
+
+    var actualChange: Int64 { actualTotal - initialBalance }
+    var actualPlusIfChange: Int64 { actualPlusIfTotal - initialBalance }
+    var difference: Int64 { actualPlusIfTotal - actualTotal }
+}
+
 @MainActor
 final class ReportsViewModel: ObservableObject {
     @Published private(set) var monthlySummaries: [ReportsMonthlySummary] = []
+    @Published private(set) var cumulativeSummary: ReportsCumulativeSummary?
 
     private let balanceService: BalanceService
 
@@ -28,10 +39,18 @@ final class ReportsViewModel: ObservableObject {
     func update(races: [Race], profile: Profile?) {
         guard let profile else {
             monthlySummaries = []
+            cumulativeSummary = nil
             return
         }
 
         let monthlyPoints = balanceService.monthlySeries(for: races, profile: profile)
+        let summary = balanceService.summarize(races: races, profile: profile)
+        cumulativeSummary = ReportsCumulativeSummary(
+            initialBalance: profile.initialBalance,
+            actualTotal: summary.finalActual,
+            actualPlusIfTotal: summary.finalIf
+        )
+
         guard !monthlyPoints.isEmpty else {
             monthlySummaries = []
             return

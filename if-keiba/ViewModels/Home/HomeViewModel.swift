@@ -5,6 +5,10 @@ struct HomeBalanceDataPoint: Identifiable, Equatable {
     let date: Date
     let actualBalance: Int64
     let ifBalance: Int64
+    let actualProfit: Int64
+    let ifProfit: Int64
+    let actualReturnRate: Double?
+    let ifReturnRate: Double?
 
     var id: Date { date }
 }
@@ -41,7 +45,31 @@ final class HomeViewModel: ObservableObject {
 
         let dailyPoints = balanceService.dailySeries(for: races, profile: profile)
         dailySeries = dailyPoints.map { point in
-            HomeBalanceDataPoint(date: point.date, actualBalance: point.actualBalance, ifBalance: point.ifBalance)
+            let actualReturnRate: Double?
+            if point.actualTotalStake > 0 {
+                actualReturnRate = Double(point.actualTotalPayout) / Double(point.actualTotalStake)
+            } else {
+                actualReturnRate = nil
+            }
+
+            let combinedStake = point.actualTotalStake + point.ifTotalStake
+            let combinedPayout = point.actualTotalPayout + point.ifTotalPayout
+            let ifReturnRate: Double?
+            if combinedStake > 0 {
+                ifReturnRate = Double(combinedPayout) / Double(combinedStake)
+            } else {
+                ifReturnRate = nil
+            }
+
+            return HomeBalanceDataPoint(
+                date: point.date,
+                actualBalance: point.actualBalance,
+                ifBalance: point.ifBalance,
+                actualProfit: point.actualProfit,
+                ifProfit: point.ifProfit,
+                actualReturnRate: actualReturnRate,
+                ifReturnRate: ifReturnRate
+            )
         }
 
         let targetMonth = calendar.dateComponents([.year, .month], from: Date())
