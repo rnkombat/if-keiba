@@ -15,7 +15,7 @@ public struct OddsCalculator {
             self.delta = delta
         }
     }
-  
+
     public init() {}
 
     /// Actual の投資額とオッズから想定払戻金を算出します。

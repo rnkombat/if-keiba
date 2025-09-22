@@ -8,7 +8,7 @@ struct HomeBalanceDataPoint: Identifiable, Equatable {
     var id: Date { date }
 }
 
-struct HomeMonthlySummary {
+struct HomeMonthlySummary: Equatable {
     let month: Date
     let actualTotal: Int64
     let ifTotal: Int64
@@ -18,43 +18,53 @@ struct HomeMonthlySummary {
     }
 }
 
+@MainActor
 final class HomeViewModel: ObservableObject {
-    @Published private(set) var dailySeries: [HomeBalanceDataPoint]
-    @Published private(set) var monthlySummary: HomeMonthlySummary
+    @Published private(set) var dailySeries: [HomeBalanceDataPoint] = []
+    @Published private(set) var monthlySummary: HomeMonthlySummary?
 
-    init(currentDate: Date = .now) {
-        let calendar = Calendar(identifier: .gregorian)
-        let components = calendar.dateComponents([.year, .month], from: currentDate)
-        let startOfMonth = calendar.date(from: components) ?? currentDate
+    private let balanceService: BalanceService
+    private let calendar: Calendar
 
-        var series: [HomeBalanceDataPoint] = []
-        var actualRunning: Int64 = 100_000
-        var ifRunning: Int64 = 100_000
+    init(balanceService: BalanceService = BalanceService(), calendar: Calendar = Calendar(identifier: .gregorian)) {
+        self.balanceService = balanceService
+        self.calendar = calendar
+    }
 
-        for dayOffset in 0..<10 {
-            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startOfMonth) else { continue }
-
-            let actualDelta = Int64(dayOffset * 1_200 - (dayOffset / 3) * 700)
-            let ifDelta = Int64(dayOffset * 1_400 - (dayOffset / 4) * 500)
-
-            actualRunning += actualDelta
-            ifRunning += ifDelta
-
-            let point = HomeBalanceDataPoint(
-                date: date,
-                actualBalance: actualRunning,
-                ifBalance: ifRunning
-            )
-            series.append(point)
+    func update(races: [Race], profile: Profile?) {
+        guard let profile else {
+            dailySeries = []
+            monthlySummary = nil
+            return
         }
 
-        self.dailySeries = series
-        let lastPoint = series.last ?? HomeBalanceDataPoint(date: startOfMonth, actualBalance: actualRunning, ifBalance: ifRunning)
-        self.monthlySummary = HomeMonthlySummary(
-            month: startOfMonth,
-            actualTotal: lastPoint.actualBalance,
-            ifTotal: lastPoint.ifBalance
-        )
+        let dailyPoints = balanceService.dailySeries(for: races, profile: profile)
+        dailySeries = dailyPoints.map { point in
+            HomeBalanceDataPoint(date: point.date, actualBalance: point.actualBalance, ifBalance: point.ifBalance)
+        }
+
+        let targetMonth = calendar.dateComponents([.year, .month], from: Date())
+        let monthAnchor = calendar.date(from: targetMonth) ?? Date()
+
+        if let monthSpecific = dailyPoints.last(where: { calendar.isDate($0.date, equalTo: monthAnchor, toGranularity: .month) }) {
+            monthlySummary = HomeMonthlySummary(
+                month: monthSpecific.date,
+                actualTotal: monthSpecific.actualBalance,
+                ifTotal: monthSpecific.ifBalance
+            )
+        } else if let latest = dailyPoints.last {
+            monthlySummary = HomeMonthlySummary(
+                month: monthAnchor,
+                actualTotal: latest.actualBalance,
+                ifTotal: latest.ifBalance
+            )
+        } else {
+            monthlySummary = HomeMonthlySummary(
+                month: monthAnchor,
+                actualTotal: profile.initialBalance,
+                ifTotal: profile.initialBalance
+            )
+        }
     }
 
     func nearestEntry(for date: Date) -> HomeBalanceDataPoint? {
